@@ -194,6 +194,19 @@
     </widget>
    </item>
    <item>
+    <widget class="QPushButton" name="googleOneBtn">
+     <property name="toolTip">
+      <string>Restart Google One</string>
+     </property>
+     <property name="accessibleName">
+      <string>Restart Google One</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QPushButton" name="cameraTorchBtn">
      <property name="toolTip">
       <string>torch</string>

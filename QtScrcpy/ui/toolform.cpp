@@ -2,7 +2,9 @@
 #include <QHideEvent>
 #include <QMouseEvent>
 #include <QShowEvent>
+#include <QToolTip>
 
+#include "../QtScrcpyCore/include/adbprocess.h"
 #include "iconhelper.h"
 #include "toolform.h"
 #include "ui_toolform.h"
@@ -56,6 +58,7 @@ void ToolForm::updateCameraMode()
     ui->homeBtn->setVisible(!camera);
     ui->returnBtn->setVisible(!camera);
     ui->clipboardBtn->setVisible(!camera);
+    ui->googleOneBtn->setVisible(!camera);
     ui->cameraTorchBtn->setVisible(camera);
     ui->cameraZoomOutBtn->setVisible(camera);
     ui->cameraZoomInBtn->setVisible(camera);
@@ -80,6 +83,7 @@ void ToolForm::initStyle()
     IconHelper::Instance()->SetIcon(ui->screenShotBtn, QChar(0xf0c4), 15);
     IconHelper::Instance()->SetIcon(ui->touchBtn, QChar(0xf111), 15);
     IconHelper::Instance()->SetIcon(ui->groupControlBtn, QChar(0xf0c0), 15);
+    IconHelper::Instance()->SetIcon(ui->googleOneBtn, QChar(0xf01e), 15);
     IconHelper::Instance()->SetIcon(ui->clipboardBtn, QChar(0xf0c5), 15);
     IconHelper::Instance()->SetIcon(ui->cameraTorchBtn, QChar(0xf0eb), 15);
     IconHelper::Instance()->SetIcon(ui->cameraZoomOutBtn, QChar(0xf010), 15);
@@ -314,4 +318,34 @@ void ToolForm::on_clipboardBtn_clicked()
         return;
     }
     device->requestDeviceClipboard();
+}
+
+void ToolForm::on_googleOneBtn_clicked()
+{
+    if (m_serial.isEmpty() || !qsc::IDeviceManage::getInstance().getDevice(m_serial)) {
+        return;
+    }
+
+    const QString package = QStringLiteral("com.google.android.apps.subscriptions.red");
+    const QString command = QStringLiteral(
+        "am force-stop %1 && sleep 2 && am start -W -a android.intent.action.MAIN "
+        "-c android.intent.category.LAUNCHER -p %1").arg(package);
+
+    ui->googleOneBtn->setEnabled(false);
+    auto *adb = new qsc::AdbProcess(this);
+    connect(adb, &qsc::AdbProcess::adbProcessResult, this,
+            [this, adb](qsc::AdbProcess::ADB_EXEC_RESULT result) {
+        if (result == qsc::AdbProcess::AER_SUCCESS_START) {
+            return;
+        }
+
+        const bool opened = result == qsc::AdbProcess::AER_SUCCESS_EXEC
+                            && adb->getStdOut().contains(QStringLiteral("Status: ok"));
+        ui->googleOneBtn->setEnabled(true);
+        QToolTip::showText(ui->googleOneBtn->mapToGlobal(ui->googleOneBtn->rect().center()),
+                           opened ? tr("done") : tr("Could not open Google One."),
+                           ui->googleOneBtn);
+        adb->deleteLater();
+    });
+    adb->execute(m_serial, {QStringLiteral("shell"), command});
 }
