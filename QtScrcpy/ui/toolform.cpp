@@ -328,8 +328,8 @@ void ToolForm::on_googleOneBtn_clicked()
 
     const QString package = QStringLiteral("com.google.android.apps.subscriptions.red");
     const QString command = QStringLiteral(
-        "am force-stop %1 && sleep 2 && am start -W -a android.intent.action.MAIN "
-        "-c android.intent.category.LAUNCHER -p %1").arg(package);
+        "am force-stop %1 && sleep 2 && "
+        "(am start -W -n %1/.LauncherActivity || monkey -p %1 -c android.intent.category.LAUNCHER 1)").arg(package);
 
     ui->googleOneBtn->setEnabled(false);
     auto *adb = new qsc::AdbProcess(this);
@@ -340,7 +340,8 @@ void ToolForm::on_googleOneBtn_clicked()
         }
 
         const bool opened = result == qsc::AdbProcess::AER_SUCCESS_EXEC
-                            && adb->getStdOut().contains(QStringLiteral("Status: ok"));
+                            && (adb->getStdOut().contains(QStringLiteral("Status: ok"))
+                                || adb->getStdOut().contains(QStringLiteral("Events injected: 1")));
         ui->googleOneBtn->setEnabled(true);
         QToolTip::showText(ui->googleOneBtn->mapToGlobal(ui->googleOneBtn->rect().center()),
                            opened ? tr("done") : tr("Could not open Google One."),
